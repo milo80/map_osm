@@ -23,6 +23,28 @@ function popup_info_on_click(map, e, elem){
 
 }
 
+function popup_info_on_click_4sqr(map, e, elem){
+    var PointsLayer = 'symbol_' + elem;
+    var PntVean = map.queryRenderedFeatures(e.point, {layers: [PointsLayer]});
+    if(PntVean.length){
+        var p = PntVean[0].properties;
+        var addr = JSON.parse(p.address);
+        //var html = '<b>[usr_id]</b>: ' + p.name +
+        var html = '<b>[category]</b>: ' + p.category +
+                   '<br><b>[address]</b>: ';
+        for (var i = 0; i < addr.length; i++) {
+            html += '<br>  ' + addr[i];
+        }
+        var div = window.document.createElement('div');
+        div.innerHTML = html;
+        div.style.overflow = 'scroll';
+        div.style.height = '110px';
+        new mapboxgl.Popup().setLngLat(e.lngLat).setDOMContent(div).addTo(map);
+    }
+}
+
+
+
 function left_legend_color_bar(elem){
     // Legend Color Bar
     var color_category_data = 'data/legend_' + elem + '.json';
@@ -49,15 +71,23 @@ function left_legend_color_bar(elem){
 }
 
 // Función de detalles de puntos Venues
-function load_points_layer(map, elem, source_){
-    // 4square veanues circle points
+function load_points_layer(map, elem){
+    // Load data points
+    var SOURCE = 'Points_' + elem;
+    var DATA = './data/geojson/' + elem + '.json';
+    map.addSource(SOURCE,{
+        type: 'geojson',
+        data: DATA
+    });
+    // Set Layers
     var ID = 'point_' + elem;
     var Symbol = 'symbol_' + elem;
     if (elem == '4square_CDMX'){
+        // 4square veanues circle points
         map.addLayer({
             'id': ID,
             'type': 'circle',
-            'source': source_,
+            'source': SOURCE,
             'layout': {
                 'visibility': 'none'
             },
@@ -75,7 +105,7 @@ function load_points_layer(map, elem, source_){
         map.addLayer({
             'id': ID,
             'type': 'circle',
-            'source': source_,
+            'source': SOURCE,
             'layout': {
                 'visibility': 'none'
             },
@@ -92,11 +122,11 @@ function load_points_layer(map, elem, source_){
             }
         });
     }
-    // 4square veanues symbol
+    // Symbol
     map.addLayer({
         'id': Symbol,
         'type': 'symbol',
-        'source': source_,
+        'source': SOURCE,
         'layout': {
             'visibility': 'none',
             'text-field': "'",
@@ -119,13 +149,25 @@ function load_points_layer(map, elem, source_){
         map.getCanvas().style.cursor = '';
     });
 
+    // Actions on click
+    map.on('click', function(e){
+        if (elem == '4square_CDMX'){
+            popup_info_on_click_4sqr(map, e, elem)
+        }
+        else{
+            popup_info_on_click(map, e, elem);
+        }
+    });
+
 }
 
 function add_remove_layer(map, Layer_) {
     var id = Layer_;
-    var POINT = 'point_' + id;
+    var POINT = '';
     var SYMBOL = 'symbol_' + id;
+    var SOURCE = '';
     var link = document.createElement('a');
+    var loadedLayers = [];
     link.href = '#';
     link.className = 'inactive';
     link.textContent = id;
@@ -134,9 +176,30 @@ function add_remove_layer(map, Layer_) {
         var clickedLayer = this.textContent;
         e.preventDefault();
         e.stopPropagation();
-
+        POINT =  'point_' + clickedLayer;
+        SOURCE = 'Points_' + clickedLayer;
+        if(map.isSourceLoaded(SOURCE)){
+            loadedLayers.push(SOURCE)
+        }
+        else{
+            load_points_layer(map, clickedLayer);
+        }
         var visibility = map.getLayoutProperty(POINT, 'visibility');
+        // Find the index of the first symbol layer in the map style
 
+        //for (var i = 0; i < layers.length; i++) {
+        //    if (layers[i].type === 'symbol') {
+        //        loadedLayers.push(layers[i])
+        //        break;
+        //    }
+        //}
+        // map.removeLayer()
+        if(loadedLayers.length > 2){
+            map.removeSource(loadedLayers[0])
+            loadedLayers.shift();
+        }
+
+        // map.removeSource('route')
         if (visibility === 'visible') {
             this.className = '';
             map.setLayoutProperty(POINT, 'visibility', 'none');
@@ -153,6 +216,14 @@ function add_remove_layer(map, Layer_) {
     layers.appendChild(link);
     return link;
 }
+
+function display_layer(map, LayGeo){
+
+
+
+}
+
+
 // Función principal
 // Levanta requerimientos para cargar mapa
 function cargar_mapa(ruta_archivo){
@@ -169,78 +240,15 @@ function cargar_mapa(ruta_archivo){
 
     map.on('load', function(){
         // Load Layers from LayersGeojson
+        /*
         for (var i = 0; i < LayersGeojson.length; i++){
-            var SOURCE = 'Points_' + LayersGeojson[i];
-            var DATA = './data/geojson/' + LayersGeojson[i] + '.json';
-            map.addSource(SOURCE,{
-                type: 'geojson',
-                data: DATA
-            });
 
-            load_points_layer(map, LayersGeojson[i], SOURCE);
+            load_points_layer(map, LayersGeojson[i]);
 
         }
-        /*
+
         */
 
-        $.when(
-            $.getJSON("data/legend_" + LayersGeojson[0] + ".json"),
-            //$.getJSON("data/legend_count.json")
-        ).done(function(Colors, Count) {
-            for(i in Colors){
-                var layer = i;// + '<b>['+ Count[i] +']</b>: ';
-                var color = Colors[i];
-                var item = document.createElement('div');
-                var key = document.createElement('span');
-                key.className = 'legend-key';
-                key.style.backgroundColor = color;
-
-                var value = document.createElement('span');
-                value.innerHTML = layer;
-                item.appendChild(key);
-                item.appendChild(value);
-                legend.appendChild(item);
-            }
-        });
-
-        //left_legend_color_bar(LayersGeojson[1]);
-
-        // Actions on click
-        map.on('click', function(e) {
-            var PointsLayer = 'symbol_' + LayersGeojson[0];
-            var PntVean = map.queryRenderedFeatures(e.point, {layers: [PointsLayer]});
-            if(PntVean.length){
-                var p = PntVean[0].properties;
-                var addr = JSON.parse(p.address);
-                //var html = '<b>[usr_id]</b>: ' + p.name +
-                var html = '<b>[category]</b>: ' + p.category +
-                           '<br><b>[address]</b>: ';
-                for (var i = 0; i < addr.length; i++) {
-                    html += '<br>  ' + addr[i];
-                }
-                var div = window.document.createElement('div');
-                div.innerHTML = html;
-                div.style.overflow = 'scroll';
-                div.style.height = '110px';
-                new mapboxgl.Popup().setLngLat(e.lngLat).setDOMContent(div).addTo(map);
-            }
-            /*
-            */
-            for(var i = 0; i < LayersGeojson.length; i++){
-                popup_info_on_click(map, e, LayersGeojson[i]);
-            }
-
-        });
-        var PntLayer = 'point_' + LayersGeojson[0];
-        // Pointer effect on hover
-        map.on('mouseenter', PntLayer, function () {
-            map.getCanvas().style.cursor = 'pointer';
-        });
-
-        // Change it back to a pointer when it leaves.
-        map.on('mouseleave', PntLayer, function () {
-            map.getCanvas().style.cursor = '';
-        });
 
         // Navigation map tools
         map.addControl(new mapboxgl.NavigationControl());
