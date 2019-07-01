@@ -1,0 +1,1 @@
+let HOME_DIR = "/home/milo/"
