@@ -1,3 +1,5 @@
+
+
 function popup_info_on_click(map, e, elem){
     var SymbolLayer = 'symbol_' + elem;
     var PntDenue = map.queryRenderedFeatures(e.point, {layers: [SymbolLayer]});
@@ -23,6 +25,7 @@ function popup_info_on_click(map, e, elem){
 
 }
 
+
 function popup_info_on_click_4sqr(map, e, elem){
     var PointsLayer = 'symbol_' + elem;
     var PntVean = map.queryRenderedFeatures(e.point, {layers: [PointsLayer]});
@@ -42,7 +45,6 @@ function popup_info_on_click_4sqr(map, e, elem){
         new mapboxgl.Popup().setLngLat(e.lngLat).setDOMContent(div).addTo(map);
     }
 }
-
 
 
 function left_legend_color_bar(elem){
@@ -89,7 +91,7 @@ function load_points_layer(map, elem){
             'type': 'circle',
             'source': SOURCE,
             'layout': {
-                'visibility': 'none'
+                'visibility': 'visible'
             },
             'paint': {
                 'circle-radius':{
@@ -107,7 +109,7 @@ function load_points_layer(map, elem){
             'type': 'circle',
             'source': SOURCE,
             'layout': {
-                'visibility': 'none'
+                'visibility': 'visible'
             },
             'paint': {
                 'circle-radius':{
@@ -128,7 +130,7 @@ function load_points_layer(map, elem){
         'type': 'symbol',
         'source': SOURCE,
         'layout': {
-            'visibility': 'none',
+            'visibility': 'visible',
             'text-field': "'",
             'text-font': [
                 'DIN Offc Pro Medium',
@@ -177,28 +179,32 @@ function add_remove_layer(map, Layer_) {
         e.preventDefault();
         e.stopPropagation();
         POINT =  'point_' + clickedLayer;
+        SYMBOL = 'symbol_' + clickedLayer;
         SOURCE = 'Points_' + clickedLayer;
+
         if(map.isSourceLoaded(SOURCE)){
             loadedLayers.push(SOURCE)
+            this.className = 'inactive';
+            map.removeLayer(POINT);
+            map.removeLayer(SYMBOL);
+            map.removeSource(SOURCE);
+            legend_left.innerHTML = "";
         }
         else{
+            this.className = 'active';
             load_points_layer(map, clickedLayer);
+            left_legend_color_bar(clickedLayer);
         }
-        var visibility = map.getLayoutProperty(POINT, 'visibility');
-        // Find the index of the first symbol layer in the map style
 
-        //for (var i = 0; i < layers.length; i++) {
-        //    if (layers[i].type === 'symbol') {
-        //        loadedLayers.push(layers[i])
-        //        break;
-        //    }
-        //}
         // map.removeLayer()
-        if(loadedLayers.length > 2){
-            map.removeSource(loadedLayers[0])
-            loadedLayers.shift();
-        }
+        //if(loadedLayers.length > 2){
+        //    map.removeSource(loadedLayers[0])
+        //    loadedLayers.shift();
+        //}
 
+        // Visibility On/Off on click button
+        /*
+        var visibility = map.getLayoutProperty(POINT, 'visibility');
         // map.removeSource('route')
         if (visibility === 'visible') {
             this.className = '';
@@ -210,6 +216,7 @@ function add_remove_layer(map, Layer_) {
             map.setLayoutProperty(SYMBOL, 'visibility', 'visible');
             left_legend_color_bar(id);
         }
+        */
     };
 
     var layers = document.getElementById('menu');
@@ -236,7 +243,7 @@ function cargar_mapa(ruta_archivo){
     zoom: 11
     });
 
-    var LayersGeojson = ['4square_CDMX', 'denue_PCT', 'denue_PorMenor1'];
+    var LayersGeojson = ['4square_CDMX', 'cultYRecrea', 'alimentos'];
 
     map.on('load', function(){
         // Load Layers from LayersGeojson
